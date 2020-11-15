@@ -30,7 +30,7 @@ public class OpenSimplexNoise {
 
     public init(perm: [Int16]) {
         self.perm = perm
-        permGradIndex3D = [Int16](count: 256, repeatedValue: 0)
+        permGradIndex3D = [Int16](repeating: 0, count: 256)
 
         for i in 0..<256 {
             //Since 3D has 24 gradients, simple bitmask won't work, so precompute modulo array.
@@ -42,9 +42,9 @@ public class OpenSimplexNoise {
     /// Generates a proper permutation (i.e. doesn't merely perform N successive pair swaps on a base array)
     /// Uses a simple 64-bit LCG.
     public init(seed _seed: Int64) {
-        perm = [Int16](count: 256, repeatedValue: 0)
-        permGradIndex3D = [Int16](count: 256, repeatedValue: 0)
-        var source: [Int16] = [Int16](count: 256, repeatedValue: 0)
+        perm = [Int16](repeating: 0, count: 256)
+        permGradIndex3D = [Int16](repeating: 0, count: 256)
+        var source: [Int16] = [Int16](repeating: 0, count: 256)
         for i in 0..<256 {
             source[i] = Int16(i)
         }
@@ -53,9 +53,9 @@ public class OpenSimplexNoise {
         var seed = _seed &* a &+ b
         seed = seed &* a &+ b
         seed = seed &* a &+ b
-        for i in (0..<256).reverse() {
+        for i in (0..<256).reversed(){
             seed = seed &* a &+ b
-            var r = Int((seed + 31) % (i + 1))
+            var r = Int((Int(seed) + 31) % (i + 1))
             if (r < 0) {
                 r += i + 1
             }
@@ -66,15 +66,15 @@ public class OpenSimplexNoise {
     }
 
     /// 2D OpenSimplex Noise.
-    public func eval(x x: Double, y: Double) -> Double {
+    public func eval(x: Double, y: Double) -> Double {
         //Place input coordinates onto grid.
         let stretchOffset = (x + y) * STRETCH_CONSTANT_2D
         let xs = x + stretchOffset
         let ys = y + stretchOffset
 
         //Floor to get grid coordinates of rhomubs (stretched square) super-cell origin.
-        var xsb = fastFloor(xs)
-        var ysb = fastFloor(ys)
+        var xsb = fastFloor(x: xs)
+        var ysb = fastFloor(x: ys)
 
         //Skew out to get actual coordinates of rhuombus origin. We'll need these later.
         let squishOffset = Double(xsb + ysb) * SQUISH_CONSTANT_2D
@@ -185,7 +185,7 @@ public class OpenSimplexNoise {
     }
 
     /// 3D OpenSimplex Noise.
-    public func eval(x x: Double, y: Double, z: Double) -> Double {
+    public func eval(x: Double, y: Double, z: Double) -> Double {
         //Place input coordinates on simplectic honeycomb.
         let stretchOffset = (x + y + z) * STRETCH_CONSTANT_3D
         let xs = x + stretchOffset
@@ -193,9 +193,9 @@ public class OpenSimplexNoise {
         let zs = z + stretchOffset
 
         //Floor to get simplectic honeycomb coordinates of rhombohedron (stretched cube) super-cell origin.
-        let xsb = fastFloor(xs)
-        let ysb = fastFloor(ys)
-        let zsb = fastFloor(zs)
+        let xsb = fastFloor(x: xs)
+        let ysb = fastFloor(x: ys)
+        let zsb = fastFloor(x: zs)
 
         //Skew out to get actual coordinates of rhombohedron origin. We'll need these later.
         let squishOffset = Double(xsb + ysb + zsb) * SQUISH_CONSTANT_3D
@@ -801,7 +801,7 @@ public class OpenSimplexNoise {
     }
 
     /// 4D OpenSimplex Noise.
-    public func eval(x x: Double, y: Double, z: Double, w: Double) -> Double {
+    public func eval(x: Double, y: Double, z: Double, w: Double) -> Double {
 
         //Place input coordinates on simplectic honeycomb.
         let stretchOffset = (x + y + z + w) * STRETCH_CONSTANT_4D
@@ -811,10 +811,10 @@ public class OpenSimplexNoise {
         let ws = w + stretchOffset
 
         //Floor to get simplectic honeycomb coordinates of rhombo-hypercube super-cell origin.
-        let xsb = fastFloor(xs)
-        let ysb = fastFloor(ys)
-        let zsb = fastFloor(zs)
-        let wsb = fastFloor(ws)
+        let xsb = fastFloor(x: xs)
+        let ysb = fastFloor(x: ys)
+        let zsb = fastFloor(x: zs)
+        let wsb = fastFloor(x: ws)
 
         //Skew out to get actual coordinates of stretched rhombo-hypercube origin. We'll need these later.
         let squishOffset = Double(xsb + ysb + zsb + wsb) * SQUISH_CONSTANT_4D
@@ -2359,21 +2359,21 @@ public class OpenSimplexNoise {
         return value / Double(NORM_CONSTANT_4D)
     }
 
-    private func extrapolate(xsb xsb: Int, ysb: Int, dx: Double, dy: Double) -> Double {
-        let index = Int(perm[Int((perm[xsb & 0xFF] + ysb) & 0xFF)] & 0x0E)
+    private func extrapolate(xsb: Int, ysb: Int, dx: Double, dy: Double) -> Double {
+        let index = Int(perm[Int((Int(perm[xsb & 0xFF]) + ysb) & 0xFF)] & 0x0E)
         return Double(gradients2D[index]) * dx
         + Double(gradients2D[index + 1]) * dy
     }
 
-    private func extrapolate(xsb xsb: Int, ysb: Int, zsb: Int, dx: Double, dy: Double, dz: Double) -> Double {
-        let index = Int(permGradIndex3D[Int((perm[Int((perm[xsb & 0xFF] + ysb) & 0xFF)] + zsb) & 0xFF)])
+    private func extrapolate(xsb: Int, ysb: Int, zsb: Int, dx: Double, dy: Double, dz: Double) -> Double {
+        let index = Int(permGradIndex3D[Int((Int(perm[Int((Int(perm[xsb & 0xFF]) + ysb) & 0xFF)]) + zsb) & 0xFF)])
         return Double(gradients3D[index]) * dx
         + Double(gradients3D[index + 1]) * dy
         + Double(gradients3D[index + 2]) * dz
     }
 
-    private func extrapolate(xsb xsb: Int, ysb: Int, zsb: Int, wsb: Int, dx: Double, dy: Double, dz: Double, dw: Double) -> Double {
-        let index = Int(perm[Int((perm[Int((perm[Int((perm[Int(xsb & 0xFF)] + ysb) & 0xFF)] + zsb) & 0xFF)] + wsb) & 0xFF)] & 0xFC)
+    private func extrapolate(xsb: Int, ysb: Int, zsb: Int, wsb: Int, dx: Double, dy: Double, dz: Double, dw: Double) -> Double {
+        let index = Int(perm[Int((Int(perm[Int((Int(perm[Int((Int(perm[Int(xsb & 0xFF)]) + ysb) & 0xFF)]) + zsb) & 0xFF)]) + wsb) & 0xFF)] & 0xFC)
         let ret = Double(gradients4D[index]) * dx
                     + Double(gradients4D[index + 1]) * dy
         return ret
